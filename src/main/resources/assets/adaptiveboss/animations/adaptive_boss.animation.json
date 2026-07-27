@@ -1,0 +1,18 @@
+{
+  "format_version": "1.10.0",
+  "animations": {
+    "animation.adaptive_boss.idle": {
+      "loop": true,
+      "animation_length": 2.0,
+      "bones": {
+        "head": {
+          "rotation": {
+            "0.0": [0, 0, 0],
+            "1.0": [4, 0, 0],
+            "2.0": [0, 0, 0]
+          }
+        }
+      }
+    }
+  }
+}

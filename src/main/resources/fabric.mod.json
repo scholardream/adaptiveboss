@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "adaptiveboss",
+  "version": "${version}",
+  "name": "Adaptive Boss",
+  "description": "Its skills are hand-designed; its tactics are learned from you. A boss that adapts to how you play.",
+  "authors": [
+    "scholardream"
+  ],
+  "contact": {
+    "homepage": "https://github.com/scholardream/adaptiveboss",
+    "sources": "https://github.com/scholardream/adaptiveboss"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.scholardream.adaptiveboss.AdaptiveBossMod"
+    ],
+    "client": [
+      "com.scholardream.adaptiveboss.AdaptiveBossClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "geckolib": ">=4.7"
+  }
+}
