@@ -1,5 +1,7 @@
 package com.scholardream.adaptiveboss.skill;
 
+import com.scholardream.adaptiveboss.bridge.SocketPolicy;
+import com.scholardream.adaptiveboss.config.ModConfig;
 import com.scholardream.adaptiveboss.entity.AdaptiveBossEntity;
 import com.scholardream.adaptiveboss.skill.skills.AreaSlam;
 import com.scholardream.adaptiveboss.skill.skills.ChargeAttack;
@@ -23,9 +25,6 @@ import java.util.Map;
  * that dies mid-fight we degrade to a local policy instead of freezing.
  */
 public class SkillScheduler {
-    /** How often (ticks) the policy is asked for a decision. 5 ticks = 0.25 s. */
-    public static final int DECISION_INTERVAL = 5;
-
     private final AdaptiveBossEntity boss;
     private final List<Skill> skills = new ArrayList<>();
     private final Map<String, Integer> cooldowns = new HashMap<>();
@@ -37,7 +36,8 @@ public class SkillScheduler {
 
     public SkillScheduler(AdaptiveBossEntity boss) {
         this.boss = boss;
-        this.policy = new RandomPolicy();
+        // week 3: Python bridge policy, degrades to RandomPolicy internally
+        this.policy = new SocketPolicy(this, boss.getBehaviorTracker());
 
         skills.add(new ChargeAttack());
         skills.add(new AreaSlam());
@@ -50,6 +50,31 @@ public class SkillScheduler {
 
     public List<Skill> getSkills() {
         return skills;
+    }
+
+    public AdaptiveBossEntity getBoss() {
+        return boss;
+    }
+
+    /** Remaining cooldown ticks for a skill id — exposed for the bridge state JSON. */
+    public int getCooldownRemaining(String skillId) {
+        return cooldowns.getOrDefault(skillId, 0);
+    }
+
+    /** Decision cadence, from config ({@code bridge.decisionIntervalTicks}). */
+    private int decisionInterval() {
+        return Math.max(1, ModConfig.get().bridge.decisionIntervalTicks);
+    }
+
+    /** Release background resources (bridge thread) when the boss is discarded. */
+    public void shutdown() {
+        if (policy instanceof AutoCloseable closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                com.scholardream.adaptiveboss.AdaptiveBossMod.LOGGER.warn("[AdaptiveBoss] failed to shut down policy", e);
+            }
+        }
     }
 
     public void tick() {
@@ -81,8 +106,8 @@ public class SkillScheduler {
             }
         }
 
-        // ask the policy for a decision every DECISION_INTERVAL ticks
-        if (windingUp == null && ctx.hasTarget() && boss.age % DECISION_INTERVAL == 0) {
+        // ask the policy for a decision every decisionInterval() ticks
+        if (windingUp == null && ctx.hasTarget() && boss.age % decisionInterval() == 0) {
             List<Skill> available = skills.stream()
                     .filter(s -> cooldowns.getOrDefault(s.id(), 0) == 0)
                     .filter(s -> s.canCast(ctx))

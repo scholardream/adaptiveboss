@@ -1,0 +1,2 @@
+# Zero dependencies — standard library only (asyncio / json / dataclasses).
+# Python 3.10+ required.

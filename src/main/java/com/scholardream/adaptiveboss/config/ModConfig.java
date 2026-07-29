@@ -25,6 +25,19 @@ public class ModConfig {
     public Charge charge = new Charge();
     public Slam areaSlam = new Slam();
     public Volley projectileVolley = new Volley();
+    public Bridge bridge = new Bridge();
+
+    /** Week 3: Python decision bridge (local TCP, NDJSON protocol). */
+    public static class Bridge {
+        /** Master switch; false = always use the local fallback policy. */
+        public boolean enabled = true;
+        public String host = "127.0.0.1";
+        public int port = 25575;
+        /** How long (ms) the game thread waits for a reply before degrading to the fallback policy. */
+        public int timeoutMs = 100;
+        /** How often (ticks) the policy is asked for a decision. 5 ticks = 0.25 s. */
+        public int decisionIntervalTicks = 5;
+    }
 
     public static class Charge {
         public int cooldownTicks = 60;

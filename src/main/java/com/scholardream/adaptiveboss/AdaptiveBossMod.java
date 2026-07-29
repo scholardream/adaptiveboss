@@ -1,5 +1,6 @@
 package com.scholardream.adaptiveboss;
 
+import com.scholardream.adaptiveboss.bridge.PlayerBehaviorTracker;
 import com.scholardream.adaptiveboss.command.ModCommands;
 import com.scholardream.adaptiveboss.config.ModConfig;
 import com.scholardream.adaptiveboss.entity.AdaptiveBossEntity;
@@ -19,6 +20,7 @@ public class AdaptiveBossMod implements ModInitializer {
         ModEntities.register();
         FabricDefaultAttributeRegistry.register(ModEntities.ADAPTIVE_BOSS, AdaptiveBossEntity.createAdaptiveBossAttributes());
         ModCommands.register();
+        PlayerBehaviorTracker.registerGlobalCallbacks();
         LOGGER.info("[AdaptiveBoss] initialized — skills are hand-designed, tactics are learned.");
     }
 }

@@ -1,5 +1,6 @@
 package com.scholardream.adaptiveboss.entity;
 
+import com.scholardream.adaptiveboss.bridge.PlayerBehaviorTracker;
 import com.scholardream.adaptiveboss.skill.SkillScheduler;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
@@ -34,6 +35,7 @@ public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
             RawAnimation.begin().then("animation.adaptive_boss.idle", Animation.LoopType.LOOP);
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private final PlayerBehaviorTracker behaviorTracker = new PlayerBehaviorTracker(this);
     private final SkillScheduler skillScheduler;
 
     protected AdaptiveBossEntity(EntityType<? extends HostileEntity> entityType, World world) {
@@ -56,6 +58,10 @@ public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
         return skillScheduler;
     }
 
+    public PlayerBehaviorTracker getBehaviorTracker() {
+        return behaviorTracker;
+    }
+
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
@@ -70,6 +76,19 @@ public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
     public void tick() {
         super.tick();
         this.skillScheduler.tick();
+        if (!getWorld().isClient()) {
+            this.behaviorTracker.tick();
+        }
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        // stop tracking this boss and release the bridge thread before discard
+        this.behaviorTracker.unregister();
+        if (!getWorld().isClient()) {
+            this.skillScheduler.shutdown();
+        }
+        super.remove(reason);
     }
 
     // ---- GeckoLib ----------------------------------------------------------
