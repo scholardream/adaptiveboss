@@ -1,6 +1,7 @@
 package com.scholardream.adaptiveboss;
 
 import com.scholardream.adaptiveboss.command.ModCommands;
+import com.scholardream.adaptiveboss.config.ModConfig;
 import com.scholardream.adaptiveboss.entity.AdaptiveBossEntity;
 import com.scholardream.adaptiveboss.entity.ModEntities;
 import net.fabricmc.api.ModInitializer;
@@ -14,6 +15,7 @@ public class AdaptiveBossMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ModConfig.load();
         ModEntities.register();
         FabricDefaultAttributeRegistry.register(ModEntities.ADAPTIVE_BOSS, AdaptiveBossEntity.createAdaptiveBossAttributes());
         ModCommands.register();

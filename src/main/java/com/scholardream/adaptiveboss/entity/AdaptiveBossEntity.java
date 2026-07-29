@@ -1,5 +1,6 @@
 package com.scholardream.adaptiveboss.entity;
 
+import com.scholardream.adaptiveboss.skill.SkillScheduler;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -24,18 +25,21 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * The adaptive boss.
  *
  * <p>Skills, model and stats are hand-designed; the AI only learns WHEN to use
- * WHICH skill against WHICH kind of player. Week 1: vanilla melee AI only,
- * skill system lands in week 2.
+ * WHICH skill against WHICH kind of player. Week 2: skill system online —
+ * charge / area slam / projectile volley, driven by a pluggable DecisionPolicy
+ * (RandomPolicy for now, Python bridge in week 3).
  */
 public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
     private static final RawAnimation IDLE_ANIM =
             RawAnimation.begin().then("animation.adaptive_boss.idle", Animation.LoopType.LOOP);
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private final SkillScheduler skillScheduler;
 
     protected AdaptiveBossEntity(EntityType<? extends HostileEntity> entityType, World world) {
         super(entityType, world);
         this.experiencePoints = 500;
+        this.skillScheduler = new SkillScheduler(this);
     }
 
     public static DefaultAttributeContainer.Builder createAdaptiveBossAttributes() {
@@ -48,6 +52,10 @@ public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 64.0);
     }
 
+    public SkillScheduler getSkillScheduler() {
+        return skillScheduler;
+    }
+
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
@@ -58,9 +66,15 @@ public class AdaptiveBossEntity extends HostileEntity implements GeoEntity {
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, true));
     }
 
+    @Override
+    public void tick() {
+        super.tick();
+        this.skillScheduler.tick();
+    }
+
     // ---- GeckoLib ----------------------------------------------------------
     // Placeholder controller: idle only. Per-skill telegraph/cast animations
-    // are added in week 2 together with the skill system.
+    // hook in here once the Blockbench model is ready.
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {

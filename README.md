@@ -32,14 +32,27 @@ Python 服务
 
 | 周 | 目标 | 状态 |
 |---|---|---|
-| 1 | Fabric 骨架 + 自定义 Boss 实体 | ✅ 本 commit |
-| 2 | 技能系统框架 (3~5 个技能, 前摇/冷却/判定) | ⬜ |
+| 1 | Fabric 骨架 + 自定义 Boss 实体 | ✅ |
+| 2 | 技能系统框架 (冲锋/震地/弹幕 + RandomPolicy) | ✅ 本次更新 |
 | 3 | Java↔Python 通信桥 (断线降级兜底) | ⬜ |
 | 4 | 战斗数据采集 (NDJSON, 可回放) | ⬜ |
 | 5 | Bandit 战术决策器 (胜率显著高于随机) | ⬜ |
 | 6 | 适应性闭环 ("复仇"可演示) | ⬜ |
 | 7 | 打磨 + 录 demo | ⬜ |
 | 8 | 发布 (Release + B 站视频) | ⬜ |
+
+## 技能设计（克制关系是 AI 可学习的前提）
+
+| 技能 | 克制 | 前摇 telegraph | 冷却 |
+|---|---|---|---|
+| `charge` 冲锋 | 远程风筝 | 15 tick，地面红色预警线指向目标 | 60 tick |
+| `area_slam` 范围震地 | 绕背贴脸 | 20 tick，橙色预警圈标出爆炸半径 | 100 tick |
+| `projectile_volley` 弹幕 | 站桩输出 | 10 tick，紫色贴身预警圈 | 80 tick |
+
+- 技能接口：`Skill`（id / 冷却 / 前摇 / `canCast` / `cast`），由 `SkillScheduler` 每 5 tick 驱动一次决策；
+- 决策来源是可插拔的 `DecisionPolicy`，当前为 `RandomPolicy`，第 3 周换成 Python 通信桥；
+- 前摇期间播粒子预警（圈/线），玩家看得见就能反制——"何时放"才是真正的决策；
+- **所有数值外置**：首次启动生成 `config/adaptiveboss.json`，改完重启生效。
 
 ## 环境搭建
 
@@ -64,9 +77,9 @@ Invoke-WebRequest "https://raw.githubusercontent.com/FabricMC/fabric-example-mod
 
 ## 当前进度说明
 
-- `AdaptiveBossEntity`：500 血、攻击 12、护甲 8、移速 0.28、抗击退 0.9，索敌范围 64，暂用原版近战 AI 追人平 A。
+- `AdaptiveBossEntity`：500 血、攻击 12、护甲 8、移速 0.28、抗击退 0.9，索敌范围 64，原版近战 AI 追人平 A 兜底。
+- 技能系统已上线：3 个技能 + 前摇预警 + 冷却 + RandomPolicy 调度。
 - 模型/动画为占位文件（`assets/adaptiveboss/geo|animations`），贴图缺失会显示紫黑方块——等 Blockbench 模型做好后替换同名文件即可，Java 侧无需改动。
-- 技能系统 / 通信桥 / 决策器在第 2~5 周按里程碑接入。
 
 ## License
 
