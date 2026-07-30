@@ -38,6 +38,8 @@ public class SocketPolicy implements DecisionPolicy, AutoCloseable {
     /** Last reply metadata, for debug display (e.g. a future /boss_status command). */
     private volatile String lastAction;
     private volatile String lastReason;
+    /** "socket" when the last decision came from the Python reply, "random_fallback" otherwise. */
+    private volatile String lastDecisionSource = "random_fallback";
 
     public SocketPolicy(SkillScheduler scheduler, PlayerBehaviorTracker behaviorTracker) {
         this.scheduler = scheduler;
@@ -62,8 +64,14 @@ public class SocketPolicy implements DecisionPolicy, AutoCloseable {
         return lastReason;
     }
 
+    /** Where the last {@link #chooseSkill} answer came from: "socket" or "random_fallback". */
+    public String getLastDecisionSource() {
+        return lastDecisionSource;
+    }
+
     @Override
     public String chooseSkill(SkillContext context, List<Skill> availableSkills) {
+        lastDecisionSource = "random_fallback";
         ModConfig.Bridge cfg = ModConfig.get().bridge;
         if (!cfg.enabled || !bridge.isAvailable() || !(context.target() instanceof PlayerEntity)) {
             return fallback.chooseSkill(context, availableSkills);
@@ -109,11 +117,13 @@ public class SocketPolicy implements DecisionPolicy, AutoCloseable {
 
         if (action == null) {
             lastAction = null;
+            lastDecisionSource = "socket";
             return null; // valid decision: keep basic melee/chase
         }
         for (Skill skill : availableSkills) {
             if (skill.id().equals(action)) {
                 lastAction = action;
+                lastDecisionSource = "socket";
                 return action;
             }
         }

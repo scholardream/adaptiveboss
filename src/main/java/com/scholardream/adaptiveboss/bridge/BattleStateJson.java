@@ -24,6 +24,16 @@ public final class BattleStateJson {
 
     public static String toJson(SkillContext ctx, List<Skill> available,
                                 PlayerBehaviorTracker behavior, SkillScheduler scheduler) {
+        return toJsonObject(ctx, available, behavior, scheduler).toString();
+    }
+
+    /**
+     * The same snapshot as a {@link JsonObject}, for callers that embed the
+     * state into a larger document (e.g. the fight logger's frame lines)
+     * instead of sending it over the wire.
+     */
+    public static JsonObject toJsonObject(SkillContext ctx, List<Skill> available,
+                                          PlayerBehaviorTracker behavior, SkillScheduler scheduler) {
         AdaptiveBossEntity boss = ctx.boss();
         PlayerEntity player = (PlayerEntity) ctx.target();
 
@@ -74,6 +84,6 @@ public final class BattleStateJson {
         }
         root.add("available_skills", availableSkills);
 
-        return root.toString();
+        return root;
     }
 }

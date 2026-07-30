@@ -25,7 +25,24 @@ public class ModConfig {
     public Charge charge = new Charge();
     public Slam areaSlam = new Slam();
     public Volley projectileVolley = new Volley();
+    public Purge purgeWave = new Purge();
+    public Boss boss = new Boss();
     public Bridge bridge = new Bridge();
+
+    /** Anti-burst tuning for the boss itself. */
+    public static class Boss {
+        /** A single hit can never take more than this fraction of max health (0.05 = 5%). */
+        public float maxDamagePerHitFraction = 0.05f;
+    }
+
+    /** Purge wave: strips overtuned potion buffs from nearby players (the "milk" counter). */
+    public static class Purge {
+        public int cooldownTicks = 200;
+        public int windupTicks = 15;
+        public double radius = 8.0;
+        /** Buffs at this level or above (level = amplifier + 1) get stripped. 10 = amplifier 9+. */
+        public int minBuffLevel = 10;
+    }
 
     /** Week 3: Python decision bridge (local TCP, NDJSON protocol). */
     public static class Bridge {

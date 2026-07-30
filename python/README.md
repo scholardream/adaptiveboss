@@ -57,3 +57,22 @@ basic melee/chase. `reason` is optional, for debug display.
 - If the server is down or slow (> `bridge.timeoutMs`, default 100 ms), the
   mod degrades to its local `RandomPolicy` automatically and reconnects with
   exponential backoff — the boss never freezes.
+
+## Replay tool (week 4)
+
+Every fight is logged by the mod to
+`saves/<world>/adaptive_boss_logs/fight_<yyyyMMdd_HHmmss>_<bossUuid8>.ndjson`
+— one JSON object per line: a `meta` line, one `frame` line per decision
+(every 5 ticks, same cadence as the bridge), and a closing `summary` line.
+
+```bash
+python replay.py path/to/fight_20260729_120000_ab12cd34.ndjson
+```
+
+It prints the meta header, one timeline row per frame (frame number,
+distance, boss/player HP, chosen action + source, damage exchanged), the
+summary (winner, duration, behavior totals, skill casts), and aggregated
+stats (total damage both ways, decision/source distribution).
+
+`requirements.txt` is unchanged: replay.py is standard library only
+(`json` / `argparse` / `collections`), Python 3.10+.

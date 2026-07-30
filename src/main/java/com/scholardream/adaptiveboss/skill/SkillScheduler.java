@@ -1,12 +1,15 @@
 package com.scholardream.adaptiveboss.skill;
 
+import com.scholardream.adaptiveboss.bridge.BattleStateJson;
 import com.scholardream.adaptiveboss.bridge.SocketPolicy;
 import com.scholardream.adaptiveboss.config.ModConfig;
 import com.scholardream.adaptiveboss.entity.AdaptiveBossEntity;
 import com.scholardream.adaptiveboss.skill.skills.AreaSlam;
 import com.scholardream.adaptiveboss.skill.skills.ChargeAttack;
 import com.scholardream.adaptiveboss.skill.skills.ProjectileVolley;
+import com.scholardream.adaptiveboss.skill.skills.PurgeWave;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
 import java.util.ArrayList;
@@ -42,6 +45,7 @@ public class SkillScheduler {
         skills.add(new ChargeAttack());
         skills.add(new AreaSlam());
         skills.add(new ProjectileVolley());
+        skills.add(new PurgeWave());
     }
 
     public void setPolicy(DecisionPolicy policy) {
@@ -93,6 +97,9 @@ public class SkillScheduler {
             if (--windupRemaining <= 0) {
                 if (windingUp.canCast(ctx)) {
                     windingUp.cast(ctx);
+                    if (boss.getFightLogger() != null) {
+                        boss.getFightLogger().recordSkillUse(windingUp.id());
+                    }
                 }
                 cooldowns.put(windingUp.id(), windingUp.cooldownTicks());
                 windingUp = null;
@@ -112,10 +119,23 @@ public class SkillScheduler {
                     .filter(s -> cooldowns.getOrDefault(s.id(), 0) == 0)
                     .filter(s -> s.canCast(ctx))
                     .toList();
-            if (available.isEmpty()) {
-                return;
+
+            String chosenId = null;
+            String source = "none"; // no skill available this frame
+            if (!available.isEmpty()) {
+                chosenId = policy.chooseSkill(ctx, available);
+                source = policy instanceof SocketPolicy socketPolicy
+                        ? socketPolicy.getLastDecisionSource()
+                        : policy.getClass().getSimpleName();
             }
-            String chosenId = policy.chooseSkill(ctx, available);
+
+            // week 4: log one frame per decision, same cadence as the bridge
+            if (boss.getFightLogger() != null && ctx.target() instanceof PlayerEntity) {
+                boss.getFightLogger().logFrame(
+                        BattleStateJson.toJsonObject(ctx, available, boss.getBehaviorTracker(), this),
+                        chosenId, source);
+            }
+
             if (chosenId == null) {
                 return;
             }

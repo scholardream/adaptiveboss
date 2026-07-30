@@ -57,8 +57,15 @@ public class PlayerBehaviorTracker {
     private long drinkStartTime = 0;
     private boolean registered = false;
 
+    /** Whole-fight totals, reset when a fight starts; the rolling window above only covers 5 s. */
+    private int totalMelee = 0;
+    private int totalRanged = 0;
+    private int totalPotions = 0;
+    private final Map<String, Integer> totalMoveHistogram = new LinkedHashMap<>();
+
     public PlayerBehaviorTracker(AdaptiveBossEntity boss) {
         this.boss = boss;
+        resetCumulative();
     }
 
     /** Registered once from the mod initializer; routes global events to the right boss. */
@@ -125,12 +132,14 @@ public class PlayerBehaviorTracker {
     public void onMeleeAttack(PlayerEntity attacker, long now) {
         if (trackedPlayerId != null && trackedPlayerId.equals(attacker.getUuid())) {
             meleeEvents.addLast(now);
+            totalMelee++;
         }
     }
 
     public void onProjectileFired(PlayerEntity owner, long now) {
         if (trackedPlayerId != null && trackedPlayerId.equals(owner.getUuid())) {
             rangedEvents.addLast(now);
+            totalRanged++;
         }
     }
 
@@ -157,6 +166,36 @@ public class PlayerBehaviorTracker {
         return behavior;
     }
 
+    /**
+     * Whole-fight totals since the last {@link #resetCumulative()} — used for
+     * the fight log's summary line, where the 5-second rolling window would
+     * only describe the very end of the fight.
+     */
+    public JsonObject cumulativeSnapshotJson() {
+        JsonObject totals = new JsonObject();
+        totals.addProperty("melee_attacks", totalMelee);
+        totals.addProperty("ranged_attacks", totalRanged);
+        totals.addProperty("potion_drinks", totalPotions);
+        JsonObject histogram = new JsonObject();
+        for (Map.Entry<String, Integer> entry : totalMoveHistogram.entrySet()) {
+            histogram.addProperty(entry.getKey(), entry.getValue());
+        }
+        totals.add("move_histogram", histogram);
+        return totals;
+    }
+
+    /** Zeroes the whole-fight counters; called when a new fight session starts. */
+    public void resetCumulative() {
+        totalMelee = 0;
+        totalRanged = 0;
+        totalPotions = 0;
+        totalMoveHistogram.clear();
+        for (String direction : DIRECTIONS) {
+            totalMoveHistogram.put(direction, 0);
+        }
+        totalMoveHistogram.put("STILL", 0);
+    }
+
     private void sampleMovement(PlayerEntity player) {
         Vec3d velocity = player.getVelocity();
         double speed = Math.hypot(velocity.x, velocity.z);
@@ -170,6 +209,7 @@ public class PlayerBehaviorTracker {
             bucket = DIRECTIONS[((index % 8) + 8) % 8];
         }
         moveSamples.addLast(bucket);
+        totalMoveHistogram.merge(bucket, 1, Integer::sum);
         while (moveSamples.size() > MAX_SAMPLES) {
             moveSamples.removeFirst();
         }
@@ -188,6 +228,7 @@ public class PlayerBehaviorTracker {
             drinkingPotion = false;
             if (now - drinkStartTime >= POTION_USE_TICKS - 1) {
                 potionEvents.addLast(now);
+                totalPotions++;
             }
         }
     }
